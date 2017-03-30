@@ -5,7 +5,7 @@ import java.awt.FontMetrics;
 import java.awt.Graphics2D;
 
 public class MenuDrawing {
-	public static void draw(Button e, Graphics2D g2d, boolean drawBorder) {
+	public static void draw(ButtonPrototype e, Graphics2D g2d, boolean drawBorder) {
 		int xCoord1 = e.getxCoord1();
 		int xCoord2 = e.getxCoord2();
 		int yCoord1 = e.getyCoord1();

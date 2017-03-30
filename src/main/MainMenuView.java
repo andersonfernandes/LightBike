@@ -23,7 +23,7 @@ public class MainMenuView extends JPanel {
 	private final int WINDOW_WIDTH = Application.WINDOW_WIDTH;
 	private final int WINDOW_HEIGHT = Application.WINDOW_HEIGHT;
 
-	private ArrayList<Button> buttonList = new ArrayList<Button>();
+	private ArrayList<ButtonPrototype> buttonList = new ArrayList<ButtonPrototype>();
 	private int currentElement = 0;
 
 	private Application application;
@@ -47,16 +47,15 @@ public class MainMenuView extends JPanel {
 		setDoubleBuffered(true);
 		setBackground(Palette.BLACK);
 		setPreferredSize(new Dimension(WINDOW_WIDTH, WINDOW_HEIGHT));
+		
+		PlayPrototype playPrototype = new PlayPrototype(WINDOW_WIDTH, BUTTON_WIDTH, BUTTON_HEIGHT, Palette.BLUE, BUTTON_FONT);
+		ButtonPrototype play = playPrototype.clonar();
 
-		Button play = new Button((WINDOW_WIDTH - BUTTON_WIDTH) / 2, 300,
-				(WINDOW_WIDTH - BUTTON_WIDTH) / 2 + BUTTON_WIDTH, 300 + BUTTON_HEIGHT, Palette.BLUE, "Play",
-				BUTTON_FONT);
-		Button settings = new Button((WINDOW_WIDTH - BUTTON_WIDTH) / 2, 400,
-				(WINDOW_WIDTH - BUTTON_WIDTH) / 2 + BUTTON_WIDTH, 400 + BUTTON_HEIGHT, Palette.BLUE, "Settings",
-				BUTTON_FONT);
-		Button quit = new Button((WINDOW_WIDTH - BUTTON_WIDTH) / 2, 500,
-				(WINDOW_WIDTH - BUTTON_WIDTH) / 2 + BUTTON_WIDTH, 500 + BUTTON_HEIGHT, Palette.BLUE, "Quit",
-				BUTTON_FONT);
+		SettingsPrototype settingsPrototype = new SettingsPrototype(WINDOW_WIDTH, BUTTON_WIDTH, BUTTON_HEIGHT, Palette.BLUE, BUTTON_FONT);
+		ButtonPrototype settings = settingsPrototype.clonar();
+		
+		QuitPrototype quitPrototype = new QuitPrototype(WINDOW_WIDTH, BUTTON_WIDTH, BUTTON_HEIGHT, Palette.BLUE, BUTTON_FONT);
+		ButtonPrototype quit = quitPrototype.clonar();
 
 		buttonList.add(play);
 		buttonList.add(settings);

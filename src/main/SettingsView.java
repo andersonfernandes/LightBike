@@ -65,9 +65,9 @@ public class SettingsView extends JPanel {
 		SelectField speed = new SelectField((WINDOW_WIDTH - BUTTON_WIDTH) / 2, 500,
 				(WINDOW_WIDTH - BUTTON_WIDTH) / 2 + BUTTON_WIDTH, 500 + BUTTON_HEIGHT, Palette.BLUE, BUTTON_FONT,
 				new ArrayList<String>(Arrays.asList("Slow", "Medium", "Fast", "Impossible")), 1);
-		Button back = new Button((WINDOW_WIDTH - BUTTON_WIDTH) / 2, 600,
-				(WINDOW_WIDTH - BUTTON_WIDTH) / 2 + BUTTON_WIDTH, 600 + BUTTON_HEIGHT, Palette.BLUE, "Back",
-				BUTTON_FONT);
+		
+		BackPrototype backPrototype = new BackPrototype(WINDOW_WIDTH, BUTTON_WIDTH, BUTTON_HEIGHT, Palette.BLUE, BUTTON_FONT);
+		ButtonPrototype back = backPrototype.clonar();
 
 		elementList.add(players);
 		elementList.add(size);
@@ -200,12 +200,12 @@ public class SettingsView extends JPanel {
 
 		// iterate through each button and draw it
 		for (int i = 0; i < elementList.size(); i++) {
-			if (elementList.get(i) instanceof Button) {
+			if (elementList.get(i) instanceof ButtonPrototype) {
 				if (i == currentElement) {
-					MenuDrawing.draw((Button) elementList.get(i), g2d, true);
+					MenuDrawing.draw((ButtonPrototype) elementList.get(i), g2d, true);
 				}
 				else {
-					MenuDrawing.draw((Button) elementList.get(i), g2d, false);
+					MenuDrawing.draw((ButtonPrototype) elementList.get(i), g2d, false);
 				}
 			}
 			if (elementList.get(i) instanceof SelectField) {

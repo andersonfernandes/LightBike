@@ -26,7 +26,7 @@ public class GameOverView extends JPanel {
 	private final Font TABLE_ENTRY_FONT = new Font("Helvetica", Font.BOLD, 40);
 	private final Font BUTTON_FONT = new Font("Helvetica", Font.BOLD, 30);
 
-	private ArrayList<Button> buttonList = new ArrayList<Button>();
+	private ArrayList<ButtonPrototype> buttonList = new ArrayList<ButtonPrototype>();
 	private int currentElement = 0;
 
 	private Application application;
@@ -54,13 +54,11 @@ public class GameOverView extends JPanel {
 		setBackground(Palette.BLACK);
 		setPreferredSize(new Dimension(WINDOW_WIDTH, WINDOW_HEIGHT));
 		
-		Button retry = new Button((WINDOW_WIDTH - BUTTON_WIDTH) / 2, 500,
-				(WINDOW_WIDTH - BUTTON_WIDTH) / 2 + BUTTON_WIDTH, 500 + BUTTON_HEIGHT, Palette.BLUE, "Retry",
-				BUTTON_FONT);
+		RetryPrototype retryPrototype = new RetryPrototype(WINDOW_WIDTH, BUTTON_WIDTH, BUTTON_HEIGHT, Palette.BLUE, BUTTON_FONT);
+		ButtonPrototype retry = retryPrototype.clonar();
 
-		Button back = new Button((WINDOW_WIDTH - BUTTON_WIDTH) / 2, 600,
-				(WINDOW_WIDTH - BUTTON_WIDTH) / 2 + BUTTON_WIDTH, 600 + BUTTON_HEIGHT, Palette.BLUE, "Main Menu",
-				BUTTON_FONT);
+		BackPrototype backPrototype = new BackPrototype(WINDOW_WIDTH, BUTTON_WIDTH, BUTTON_HEIGHT, Palette.BLUE, BUTTON_FONT);
+		ButtonPrototype back = backPrototype.clonar();
 
 		buttonList.add(retry);
 		buttonList.add(back);
