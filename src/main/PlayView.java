@@ -15,9 +15,9 @@ import javax.swing.JPanel;
 import javax.swing.Timer;
 
 @SuppressWarnings("serial")
-public class PlayView extends JPanel implements ActionListener {
-	private final int WINDOW_WIDTH = Application.WINDOW_WIDTH;
-	private final int WINDOW_HEIGHT = Application.WINDOW_HEIGHT;
+public class PlayView extends JPanel implements ActionListener, Observable {
+	private static final int WINDOW_WIDTH = Application.WINDOW_WIDTH;
+	private static final int WINDOW_HEIGHT = Application.WINDOW_HEIGHT;
 
 	private int delay;
 
@@ -27,18 +27,16 @@ public class PlayView extends JPanel implements ActionListener {
 	private static final int MEDIUM_WIDTH = 15; //px
 	private static final int LARGE_WIDTH = 23; //px
 
-	private int oneSide;
+	private static int oneSide;
 
 	private Location tempLocation;
 
 	// TODO: Initialize to 0s for readability
-	private int[][] gameBoard = new int[WINDOW_WIDTH][WINDOW_HEIGHT];
-	private ArrayList<ArrayList<Line>> playerLines = new ArrayList<ArrayList<Line>>();
-	private ArrayList<ArrayList<Rectangle>> playerRectangles = new ArrayList<ArrayList<Rectangle>>();
-	private ArrayList<Integer> playerLineCounts = new ArrayList<Integer>();
+	private static int[][] gameBoard = new int[WINDOW_WIDTH][WINDOW_HEIGHT];
+
+	private ArrayList<Observer> playersInfoObservers = new ArrayList<>();
+
 	private ArrayList<Integer> playersDead = new ArrayList<Integer>();
-	
-	private int currentLineCount = 0;
 
 	private Application application;
 
@@ -50,6 +48,27 @@ public class PlayView extends JPanel implements ActionListener {
 	private ArrayList<Player> players = new ArrayList<Player>();
 
 	public PlayView() {
+	}
+
+	@Override
+	public void attachObserver(Observer observer) {
+		playersInfoObservers.add(observer);
+	}
+
+	@Override
+	public void detachObserver(Observer observer) {
+		playersInfoObservers.remove(observer);
+	}
+
+	@Override
+	public void notifyObservers() {
+		for (Observer observer : playersInfoObservers) {
+			observer.update();
+		}
+	}
+
+	public static int getOneSide() {
+		return oneSide;
 	}
 
 	private class TAdapter extends KeyAdapter {
@@ -107,12 +126,28 @@ public class PlayView extends JPanel implements ActionListener {
 		}
 		oneSide = ((playerWidth - 1) / 2);
 
+		initializePlayers();
+
 		for (int p = 0; p < numPlayers; p++) {
-			playerRectangles.add(new ArrayList<Rectangle>());
-			playerLines.add(new ArrayList<Line>());
-			playerLineCounts.add(0);
+			PlayerInfo playerInfo = new PlayerInfo();
+
+			Player player = players.get(p);
+			setPlayerPosition(player, p);
+
+			Rectangle rectangle = new Rectangle(player.getLocation().getx() - oneSide,
+					player.getLocation().gety() - oneSide, player.getLocation().getx() + oneSide,
+					player.getLocation().gety() + oneSide);
+			playerInfo.getRectangles().add(rectangle);
+
+			playerInfo.setPlayer(player);
+			attachObserver(playerInfo);
 		}
 
+		gameTime = new Timer(delay, this);
+		gameTime.start();
+	}
+
+	private void initializePlayers() {
 		p1 = new Player(new Location(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 - 4 * playerWidth), Direction.UP, Palette.GREEN,
 				true, playerWidth);
 		players.add(p1);
@@ -128,22 +163,14 @@ public class PlayView extends JPanel implements ActionListener {
 		p4 = new Player(new Location(WINDOW_WIDTH / 2 - 4 * playerWidth, WINDOW_HEIGHT / 2), Direction.LEFT, Palette.BLUE,
 				true, playerWidth);
 		players.add(p4);
+	}
 
-		for (int p = 0; p < numPlayers; p++) {
-			// set the starting indices
-			for (int i = -oneSide; i <= oneSide; i++) {
-				for (int j = -oneSide; j <= oneSide; j++) {
-					gameBoard[players.get(p).getLocation().getx() + i][players.get(p).getLocation().gety() + j] = p + 1;
-				}
+	public static void setPlayerPosition(Player player, int playerIndex) {
+		for (int i = -oneSide; i <= oneSide; i++) {
+			for (int j = -oneSide; j <= oneSide; j++) {
+				gameBoard[player.getLocation().getx() + i][player.getLocation().gety() + j] = playerIndex + 1;
 			}
-			// create the starting block for the player
-			playerRectangles.get(p).add(new Rectangle(players.get(p).getLocation().getx() - oneSide,
-					players.get(p).getLocation().gety() - oneSide, players.get(p).getLocation().getx() + oneSide,
-					players.get(p).getLocation().gety() + oneSide));
 		}
-
-		gameTime = new Timer(delay, this);
-		gameTime.start();
 	}
 
 	@Override
@@ -164,74 +191,98 @@ public class PlayView extends JPanel implements ActionListener {
 		}
 
 		if (numPlayers >= 1) {
+			PlayerInfo info = (PlayerInfo) playersInfoObservers.get(0);
+
 			if (p1.getDirection() != Direction.DOWN && p1.getDirection() != Direction.UP) {
 				if (key == KeyEvent.VK_UP) {
+					info.setNextDirection(Direction.UP);
 					p1.setDirection(Direction.UP);
 				}
 				else if (key == KeyEvent.VK_DOWN) {
+					info.setNextDirection(Direction.DOWN);
 					p1.setDirection(Direction.DOWN);
 				}
 			}
 
 			else if (p1.getDirection() != Direction.LEFT && p1.getDirection() != Direction.RIGHT) {
 				if (key == KeyEvent.VK_RIGHT) {
+					info.setNextDirection(Direction.RIGHT);
 					p1.setDirection(Direction.RIGHT);
 				}
 				else if (key == KeyEvent.VK_LEFT) {
+					info.setNextDirection(Direction.LEFT);
 					p1.setDirection(Direction.LEFT);
 				}
 			}
 		}
 		if (numPlayers >= 2) {
+			PlayerInfo info = (PlayerInfo) playersInfoObservers.get(1);
+
 			if (p2.getDirection() != Direction.DOWN && p2.getDirection() != Direction.UP) {
 				if (key == KeyEvent.VK_W) {
+					info.setNextDirection(Direction.UP);
 					p2.setDirection(Direction.UP);
 				}
 				else if (key == KeyEvent.VK_S) {
+					info.setNextDirection(Direction.DOWN);
 					p2.setDirection(Direction.DOWN);
 				}
 			}
 			else if (p2.getDirection() != Direction.LEFT && p2.getDirection() != Direction.RIGHT) {
 				if (key == KeyEvent.VK_D) {
+					info.setNextDirection(Direction.RIGHT);
 					p2.setDirection(Direction.RIGHT);
 				}
 				else if (key == KeyEvent.VK_A) {
+					info.setNextDirection(Direction.LEFT);
 					p2.setDirection(Direction.LEFT);
 				}
 			}
 		}
 		if (numPlayers >= 3) {
+			PlayerInfo info = (PlayerInfo) playersInfoObservers.get(2);
+
 			if (p3.getDirection() != Direction.DOWN && p3.getDirection() != Direction.UP) {
 				if (key == KeyEvent.VK_I) {
+					info.setNextDirection(Direction.UP);
 					p3.setDirection(Direction.UP);
 				}
 				else if (key == KeyEvent.VK_K) {
+					info.setNextDirection(Direction.DOWN);
 					p3.setDirection(Direction.DOWN);
 				}
 			}
 			else if (p3.getDirection() != Direction.LEFT && p3.getDirection() != Direction.RIGHT) {
 				if (key == KeyEvent.VK_L) {
+					info.setNextDirection(Direction.RIGHT);
 					p3.setDirection(Direction.RIGHT);
 				}
 				else if (key == KeyEvent.VK_J) {
+					info.setNextDirection(Direction.LEFT);
 					p3.setDirection(Direction.LEFT);
 				}
 			}
 		}
 		if (numPlayers >= 4) {
+			PlayerInfo info = (PlayerInfo) playersInfoObservers.get(3);
+
 			if (p4.getDirection() != Direction.DOWN && p4.getDirection() != Direction.UP) {
 				if (key == KeyEvent.VK_T) {
+					info.setNextDirection(Direction.UP);
 					p4.setDirection(Direction.UP);
 				}
 				else if (key == KeyEvent.VK_G) {
+					info.setNextDirection(Direction.DOWN);
 					p4.setDirection(Direction.DOWN);
 				}
 			}
 			else if (p4.getDirection() != Direction.LEFT && p4.getDirection() != Direction.RIGHT) {
 				if (key == KeyEvent.VK_H) {
+					info.setNextDirection(Direction.RIGHT);
 					p4.setDirection(Direction.RIGHT);
 				}
 				else if (key == KeyEvent.VK_F) {
+					info.setNextDirection(Direction.LEFT);
 					p4.setDirection(Direction.LEFT);
 				}
 			}
@@ -239,48 +290,7 @@ public class PlayView extends JPanel implements ActionListener {
 
 		// executed when player changes direction
 		// convert individual lines to a big rectangle, change the player position, and update the corner indices
-		for (int p = 0; p < numPlayers; p++) {
-			if (players.get(p).getDirection() != currentDirections.get(p) && players.get(p).getAlive()) {
-				if (currentDirections.get(p) == Direction.UP) {
-					playerRectangles.get(p)
-							.add(new Rectangle(players.get(p).getLocation().getx() - oneSide,
-									players.get(p).getLocation().gety() - oneSide,
-									players.get(p).getLocation().getx() + oneSide,
-									players.get(p).getLocation().gety() - oneSide + playerLineCounts.get(p)));
-				}
-				else if (currentDirections.get(p) == Direction.RIGHT) {
-					playerRectangles.get(p)
-							.add(new Rectangle(players.get(p).getLocation().getx() + oneSide - playerLineCounts.get(p),
-									players.get(p).getLocation().gety() - oneSide,
-									players.get(p).getLocation().getx() + oneSide,
-									players.get(p).getLocation().gety() + oneSide));
-				}
-				else if (currentDirections.get(p) == Direction.DOWN) {
-					playerRectangles.get(p)
-							.add(new Rectangle(players.get(p).getLocation().getx() - oneSide,
-									players.get(p).getLocation().gety() + oneSide - playerLineCounts.get(p),
-									players.get(p).getLocation().getx() + oneSide,
-									players.get(p).getLocation().gety() + oneSide));
-				}
-				else if (currentDirections.get(p) == Direction.LEFT) {
-					playerRectangles.get(p)
-							.add(new Rectangle(players.get(p).getLocation().getx() - oneSide,
-									players.get(p).getLocation().gety() - oneSide,
-									players.get(p).getLocation().getx() - oneSide + playerLineCounts.get(p),
-									players.get(p).getLocation().gety() + oneSide));
-				}
-
-				for (int i = -oneSide; i <= oneSide; i++) {
-					for (int j = -oneSide; j <= oneSide; j++) {
-						gameBoard[players.get(p).getLocation().getx() + i][players.get(p).getLocation().gety() + j] = p
-								+ 1;
-					}
-				}
-
-				playerLines.get(p).clear();
-				playerLineCounts.set(p, 0);
-			}
-		}
+		notifyObservers();
 	}
 
 	@Override
@@ -340,82 +350,87 @@ public class PlayView extends JPanel implements ActionListener {
 
 	public void move() {
 		boolean endGameCollision = true;
-		for (int p = 0; p < numPlayers; p++) {
-			if (players.get(p).getAlive()) {
-				endGameCollision = false;
-			}
+
+		for (Observer observer : playersInfoObservers) {
+			PlayerInfo info = (PlayerInfo) observer;
+
+			if (info.getPlayer().getAlive()) { endGameCollision = false; }
 		}
 		
 		if (endGameCollision) {
 			application.swapGameOver(playersDead);
 			stop();
 		}
-		
-		for (int p = 0; p < numPlayers; p++) {
-			if (players.get(p).getAlive()) {
-				tempLocation = players.get(p).getLocation();
 
-				if (players.get(p).getDirection() == Direction.UP) {
+		int index = 0;
+		for (Observer observer : playersInfoObservers) {
+			PlayerInfo info = (PlayerInfo) observer;
+
+			Player player = info.getPlayer();
+			if (player.getAlive()) {
+				tempLocation = player.getLocation();
+
+				if (player.getDirection() == Direction.UP) {
 					tempLocation.sety(tempLocation.gety() - 1);
 				}
-				else if (players.get(p).getDirection() == Direction.RIGHT) {
+				else if (player.getDirection() == Direction.RIGHT) {
 					tempLocation.setx(tempLocation.getx() + 1);
 				}
-				else if (players.get(p).getDirection() == Direction.DOWN) {
+				else if (player.getDirection() == Direction.DOWN) {
 					tempLocation.sety(tempLocation.gety() + 1);
 				}
-				else if (players.get(p).getDirection() == Direction.LEFT) {
+				else if (player.getDirection() == Direction.LEFT) {
 					tempLocation.setx(tempLocation.getx() - 1);
 				}
-				players.get(p).setLocation(tempLocation); // location is moved by one pixel in some direction
+				player.setLocation(tempLocation); // location is moved by one pixel in some direction
 
-				if (checkCollision(players.get(p).getLocation(), players.get(p).getDirection())
-						|| checkOutOfBounds(players.get(p).getLocation())) {
-					players.get(p).setAlive(false);
-					playersDead.add(p + 1);
+				if (checkCollision(player.getLocation(), player.getDirection())
+						|| checkOutOfBounds(player.getLocation())) {
+					player.setAlive(false);
+					playersDead.add(index + 1);
 				}
 				else {
-					if (players.get(p).getDirection() == Direction.UP) {
+					if (player.getDirection() == Direction.UP) {
 						for (int i = -oneSide; i <= oneSide; i++) {
 							gameBoard[tempLocation.getx() + i][tempLocation.gety() - oneSide] = 1;
 						}
-						playerLines.get(p)
-								.add(new Line(players.get(p).getLocation().getx() - oneSide,
-										players.get(p).getLocation().gety() - oneSide,
-										players.get(p).getLocation().getx() + oneSide,
-										players.get(p).getLocation().gety() - oneSide));
+						info.getLines()
+								.add(new Line(player.getLocation().getx() - oneSide,
+										player.getLocation().gety() - oneSide,
+										player.getLocation().getx() + oneSide,
+										player.getLocation().gety() - oneSide));
 					}
-					else if (players.get(p).getDirection() == Direction.DOWN) {
+					else if (player.getDirection() == Direction.DOWN) {
 						for (int i = -oneSide; i <= oneSide; i++) {
 							gameBoard[tempLocation.getx() + i][tempLocation.gety() + oneSide] = 1;
 						}
-						playerLines.get(p)
-								.add(new Line(players.get(p).getLocation().getx() - oneSide,
-										players.get(p).getLocation().gety() + oneSide,
-										players.get(p).getLocation().getx() + oneSide,
-										players.get(p).getLocation().gety() + oneSide));
+						info.getLines()
+								.add(new Line(player.getLocation().getx() - oneSide,
+										player.getLocation().gety() + oneSide,
+										player.getLocation().getx() + oneSide,
+										player.getLocation().gety() + oneSide));
 					}
-					else if (players.get(p).getDirection() == Direction.LEFT) {
+					else if (player.getDirection() == Direction.LEFT) {
 						for (int i = -oneSide; i <= oneSide; i++) {
 							gameBoard[tempLocation.getx() - oneSide][tempLocation.gety() + i] = 1;
 						}
-						playerLines.get(p)
-								.add(new Line(players.get(p).getLocation().getx() - oneSide,
-										players.get(p).getLocation().gety() - oneSide,
-										players.get(p).getLocation().getx() - oneSide,
-										players.get(p).getLocation().gety() + oneSide));
+						info.getLines()
+								.add(new Line(player.getLocation().getx() - oneSide,
+										player.getLocation().gety() - oneSide,
+										player.getLocation().getx() - oneSide,
+										player.getLocation().gety() + oneSide));
 					}
-					else if (players.get(p).getDirection() == Direction.RIGHT) {
+					else if (player.getDirection() == Direction.RIGHT) {
 						for (int i = -oneSide; i <= oneSide; i++) {
 							gameBoard[tempLocation.getx() + oneSide][tempLocation.gety() + i] = 1;
 						}
-						playerLines.get(p)
-								.add(new Line(players.get(p).getLocation().getx() + oneSide,
-										players.get(p).getLocation().gety() - oneSide,
-										players.get(p).getLocation().getx() + oneSide,
-										players.get(p).getLocation().gety() + oneSide));
+						info.getLines()
+								.add(new Line(player.getLocation().getx() + oneSide,
+										player.getLocation().gety() - oneSide,
+										player.getLocation().getx() + oneSide,
+										player.getLocation().gety() + oneSide));
 					}
-					playerLineCounts.set(p, playerLineCounts.get(p) + 1);
+					info.setLinesCount(info.getLinesCount() +1);
 				}
 			}
 		}
@@ -427,20 +442,22 @@ public class PlayView extends JPanel implements ActionListener {
 		rh.put(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
 		g2d.setRenderingHints(rh);
 
-		for (int p = 0; p < numPlayers; p++) {
-			g.setColor(players.get(p).getColor());
+
+		for (Observer observer : playersInfoObservers) {
+			PlayerInfo info = (PlayerInfo) observer;
+
+			g.setColor(info.getPlayer().getColor());
 
 			// draw all the lines
-			for (int i = 0; i < playerLines.get(p).size(); i++) {
-				g.drawLine(playerLines.get(p).get(i).getx1(), playerLines.get(p).get(i).gety1(),
-						playerLines.get(p).get(i).getx2(), playerLines.get(p).get(i).gety2());
+			for (Line line : info.getLines()) {
+				g.drawLine(line.getx1(), line.gety1(), line.getx2(), line.gety2());
 			}
 
 			// draw all the rectangles
-			for (int i = 0; i < playerRectangles.get(p).size(); i++) {
-				g.fillRect(playerRectangles.get(p).get(i).getx1(), playerRectangles.get(p).get(i).gety1(),
-						playerRectangles.get(p).get(i).getx2() + 1 - playerRectangles.get(p).get(i).getx1(),
-						playerRectangles.get(p).get(i).gety2() + 1 - playerRectangles.get(p).get(i).gety1());
+			for (Rectangle rectangle : info.getRectangles()) {
+				g.fillRect(rectangle.getx1(), rectangle.gety1(),
+						rectangle.getx2() + 1 - rectangle.getx1(),
+						rectangle.gety2() + 1 - rectangle.gety1());
 			}
 		}
 
